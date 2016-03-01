@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>AJAX Playground</title>
+
+    <style>
+
+      body {
+        font-family: 'helvetica neue';
+      }
+
+      button {
+        font-size: 2em;
+        padding: 18px;
+        border: none;
+        border-radius: 6px;
+        color: #fff;
+        background-color: #522CBA;
+      }
+
+      section {
+        margin: 10px 0;
+      }
+    </style>
+
+  </head>
+
+  <body>
+   <section>
+      <div>
+         <select id="city">
+        <option value="nome">Nome</option>
+        <option value="dallas">dallas</option>
+      </select>
+      </div>
+      <div>
+        <select id="province">
+          <option value="ak">AK</option>
+          <option value="il">IL</option>
+        </select>
+      </div>
+    </section>
+    <button>Press Me</button>
+
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
+    <script>
+     var geocoder;
+      $(function() {
+        $("button").click(function() {
+          $("section").append("<span>Hold on a moment...</span>");
+          // var city = $("#city option:selected").val();
+          // var province =  $("#province option:selected").val();
+        });
+        initialize();
+        navigator.geolocation.getCurrentPosition(successOpera, errorOpera, options);
+      });
+
+      var options = {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      };
+
+      function successOpera(pos){
+        var crd = pos.coords;
+        latitude = crd.latitude;
+        longitude = crd.longitude;
+        getCity(latitude,longitude);
+      };
+
+      function errorOpera(err) {
+        console.warn('ERROR(' + err.code + '): ' + err.message);
+      };
+      //get city according to the latitude and longitude
+      function initialize() {
+        geocoder = new google.maps.Geocoder();
+      }
+      function getCity(lat, lng) {
+        var latlng = new google.maps.LatLng(lat, lng);
+        geocoder.geocode({latLng: latlng}, function(results, status) {
+          if (status == google.maps.GeocoderStatus.OK) {
+            if (results[1]) {
+              var arrAddress = results;
+              $.each(arrAddress, function(i, address_component) {
+                if (address_component.types[0] == "locality") {
+                  itemLocality = address_component.address_components[0].long_name;
+                  itemCountry = address_component.address_components[2].long_name;
+                  getWeather(itemLocality,itemCountry);
+                }
+              });
+            } else {
+              alert("No results found");
+            }
+          } else {
+            alert("Geocoder failed due to: " + status);
+          }
+        });
+      }
+
+      function getWeather(city,province){
+        var url1 = "https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20weather.forecast%20where%20woeid%20in%20(select%20woeid%20from%20geo.places(1)%20where%20text%3D%22";
+        var url2 ="%2C%20";
+        var url3 = "%22)&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys";
+
+        $.ajax({
+          method: "GET",
+          url: url1+city+url2+province+url3,
+          success: function(data) {
+            $("section").append("The wind speed in "+city+","+province+" is " + data.query.results.channel.wind.speed);
+
+          },
+          error: function(error) {
+            alert("Doh!");
+          }
+          });
+      };
+    </script>
+
+  </body>
+</html>
